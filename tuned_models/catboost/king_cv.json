@@ -10,8 +10,8 @@
     "task_type": "CPU",
     "thread_count": 4,
     "cat_features": [
-        17,
-        18,
-        19
+        0,
+        1,
+        2
     ]
 }

@@ -12,8 +12,13 @@ catboost_info/
 **/**.tar
 **/**.code-workspace
 **/**.csv
-exp/**/**/results_catboost.json
-exp/**/**/results_mlp.json
+.idea/
+exp/
+fl_simulation/catboost_info/
+fl_simulation/dataset/
+fl_simulation/tutorial/
+fl_simulation/exp/
+fl_simulation/logs/
 
 configs/
 data/

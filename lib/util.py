@@ -23,6 +23,15 @@ import zero
 
 from . import env
 
+
+def tensor2ndarray(t) -> np.ndarray:
+    if isinstance(t, np.ndarray):
+        return t
+    if t.device == torch.device('cpu'):
+        return t.numpy()
+    else:
+        return t.detach().cpu().numpy()
+
 RawConfig = Dict[str, Any]
 Report = Dict[str, Any]
 T = TypeVar('T')

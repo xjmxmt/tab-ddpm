@@ -18,19 +18,19 @@ class MetricsReport:
     def __init__(self, report: dict, task_type: TaskType):
         self._res = {k: {} for k in report.keys()}
         if task_type in (TaskType.BINCLASS, TaskType.MULTICLASS):
-            self._metrics_names = ["acc", "f1"]
+            self._metrics_names = ["acc", "f1", "roc_auc"]
             for k in report.keys():
                 self._res[k]["acc"] = report[k]["accuracy"]
                 self._res[k]["f1"] = report[k]["macro avg"]["f1-score"]
-                if task_type == TaskType.BINCLASS:
-                    self._res[k]["roc_auc"] = report[k]["roc_auc"]
-                    self._metrics_names.append("roc_auc")
+                self._res[k]["roc_auc"] = report[k]["roc_auc"]
 
         elif task_type == TaskType.REGRESSION:
-            self._metrics_names = ["r2", "rmse"]
+            self._metrics_names = ["r2", "rmse", "mape", "evs"]
             for k in report.keys():
                 self._res[k]["r2"] = report[k]["r2"]
                 self._res[k]["rmse"] = report[k]["rmse"]
+                self._res[k]["mape"] = report[k]["mape"]
+                self._res[k]["evs"] = report[k]["evs"]
         else:
             raise "Unknown TaskType!"
 
@@ -49,13 +49,16 @@ class MetricsReport:
     def get_test_score(self) -> float:
         return self._res["test"]["r2"] if "r2" in self._res["test"] else self._res["test"]["f1"]
     
-    def print_metrics(self) -> None:
+    def print_metrics(self) -> dict:
         res = {
+            "train": {k: np.around(self._res["train"][k], 4) for k in self._res["train"]},
             "val": {k: np.around(self._res["val"][k], 4) for k in self._res["val"]},
             "test": {k: np.around(self._res["test"][k], 4) for k in self._res["test"]}
         }
     
         print("*"*100)
+        print("[train]")
+        print(res["train"])
         print("[val]")
         print(res["val"])
         print("[test]")
@@ -147,7 +150,9 @@ def calculate_metrics(
         assert 'std' in y_info
         rmse = calculate_rmse(y_true, y_pred, y_info['std'])
         r2 = skm.r2_score(y_true, y_pred)
-        result = {'rmse': rmse, 'r2': r2}
+        mape = skm.mean_absolute_percentage_error(y_true, y_pred)
+        evs = skm.explained_variance_score(y_true, y_pred)
+        result = {'rmse': rmse, 'r2': r2, 'mape': mape, 'evs': evs}
     else:
         labels, probs = _get_labels_and_probs(y_pred, task_type, prediction_type)
         result = cast(
@@ -155,4 +160,9 @@ def calculate_metrics(
         )
         if task_type == TaskType.BINCLASS:
             result['roc_auc'] = skm.roc_auc_score(y_true, probs)
+        else:
+            try:
+                result['roc_auc'] = skm.roc_auc_score(y_true, probs, multi_class='ovr', average="macro")
+            except ValueError:
+                result['roc_auc'] = 0.0
     return result
